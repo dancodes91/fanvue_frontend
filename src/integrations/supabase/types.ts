@@ -14,16 +14,308 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      characters: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          personality_traits: string[]
+          reference_images: string[]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          personality_traits?: string[]
+          reference_images?: string[]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          personality_traits?: string[]
+          reference_images?: string[]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      generation_jobs: {
+        Row: {
+          character_id: string | null
+          created_at: string
+          created_by: string | null
+          error_message: string | null
+          id: string
+          input_payload: Json
+          output_url: string | null
+          status: Database["public"]["Enums"]["job_status"]
+          type: Database["public"]["Enums"]["job_type"]
+          updated_at: string
+        }
+        Insert: {
+          character_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          error_message?: string | null
+          id?: string
+          input_payload?: Json
+          output_url?: string | null
+          status?: Database["public"]["Enums"]["job_status"]
+          type: Database["public"]["Enums"]["job_type"]
+          updated_at?: string
+        }
+        Update: {
+          character_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          error_message?: string | null
+          id?: string
+          input_payload?: Json
+          output_url?: string | null
+          status?: Database["public"]["Enums"]["job_status"]
+          type?: Database["public"]["Enums"]["job_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generation_jobs_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      images: {
+        Row: {
+          character_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          image_url: string
+          prompt: string | null
+          status: Database["public"]["Enums"]["content_status"]
+          updated_at: string
+        }
+        Insert: {
+          character_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          image_url: string
+          prompt?: string | null
+          status?: Database["public"]["Enums"]["content_status"]
+          updated_at?: string
+        }
+        Update: {
+          character_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          image_url?: string
+          prompt?: string | null
+          status?: Database["public"]["Enums"]["content_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "images_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          email: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      review_queue: {
+        Row: {
+          content_id: string
+          content_type: Database["public"]["Enums"]["content_type"]
+          created_at: string
+          id: string
+          notes: string | null
+          reviewed_at: string | null
+          reviewer_id: string | null
+          status: Database["public"]["Enums"]["content_status"]
+          updated_at: string
+        }
+        Insert: {
+          content_id: string
+          content_type: Database["public"]["Enums"]["content_type"]
+          created_at?: string
+          id?: string
+          notes?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          status?: Database["public"]["Enums"]["content_status"]
+          updated_at?: string
+        }
+        Update: {
+          content_id?: string
+          content_type?: Database["public"]["Enums"]["content_type"]
+          created_at?: string
+          id?: string
+          notes?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          status?: Database["public"]["Enums"]["content_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      schedules: {
+        Row: {
+          content_id: string
+          content_type: Database["public"]["Enums"]["content_type"]
+          created_at: string
+          created_by: string | null
+          id: string
+          platform: string
+          publish_time: string
+          status: Database["public"]["Enums"]["schedule_status"]
+          updated_at: string
+        }
+        Insert: {
+          content_id: string
+          content_type: Database["public"]["Enums"]["content_type"]
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          platform?: string
+          publish_time: string
+          status?: Database["public"]["Enums"]["schedule_status"]
+          updated_at?: string
+        }
+        Update: {
+          content_id?: string
+          content_type?: Database["public"]["Enums"]["content_type"]
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          platform?: string
+          publish_time?: string
+          status?: Database["public"]["Enums"]["schedule_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      videos: {
+        Row: {
+          character_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          prompt: string | null
+          scene_prompts: Json
+          status: Database["public"]["Enums"]["content_status"]
+          updated_at: string
+          video_url: string
+        }
+        Insert: {
+          character_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          prompt?: string | null
+          scene_prompts?: Json
+          status?: Database["public"]["Enums"]["content_status"]
+          updated_at?: string
+          video_url: string
+        }
+        Update: {
+          character_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          prompt?: string | null
+          scene_prompts?: Json
+          status?: Database["public"]["Enums"]["content_status"]
+          updated_at?: string
+          video_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "videos_character_id_fkey"
+            columns: ["character_id"]
+            isOneToOne: false
+            referencedRelation: "characters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "user"
+      content_status: "pending" | "approved" | "rejected"
+      content_type: "image" | "video"
+      job_status: "queued" | "processing" | "completed" | "failed"
+      job_type: "image" | "video"
+      schedule_status: "scheduled" | "published" | "failed" | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +442,13 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "user"],
+      content_status: ["pending", "approved", "rejected"],
+      content_type: ["image", "video"],
+      job_status: ["queued", "processing", "completed", "failed"],
+      job_type: ["image", "video"],
+      schedule_status: ["scheduled", "published", "failed", "cancelled"],
+    },
   },
 } as const
