@@ -1,7 +1,7 @@
 
-# Lila Studio — AI Creator Management Platform
+# Fanvue Automation Platform — AI Creator Management
 
-Lila Studio is an internal AI-powered content management system designed to generate, review, schedule, and manage visual content for a virtual creator persona named **Lila**.
+Fanvue Automation is an internal AI-powered content management system designed to generate, review, schedule, and manage visual content for a virtual creator persona named **Lila**.
 
 The platform is built as a scalable SaaS-style dashboard with future integration for AI generation pipelines (RunPod / ComfyUI) and automation workflows.
 
