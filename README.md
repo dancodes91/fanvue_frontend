@@ -22,7 +22,7 @@ This system is designed to handle the full lifecycle of AI-generated content:
 
 ## 🧠 Core Concept
 
-Instead of a simple generation tool, Lila Studio acts as a:
+Instead of a simple generation tool, Fanvue Automation acts as a:
 
 > **Central operating system for AI content creation and distribution**
 
@@ -116,14 +116,14 @@ src/
 
 ---
 
-## 🔐 Firebase Architecture
+## 🔐 Supabase Architecture
 
 ### Authentication
 
 * Admin-only login system
 * Protected routes
 
-### Firestore Collections
+### Supabase Collections
 
 * users
 * characters
