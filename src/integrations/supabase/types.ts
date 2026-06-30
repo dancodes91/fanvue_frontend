@@ -116,10 +116,7 @@ export type Database = {
           id: string
           input_payload: Json
           output_url: string | null
-          payload_snapshot: Json
-          runpod_job_id: string | null
           status: Database["public"]["Enums"]["job_status"]
-          submitted_at: string | null
           type: Database["public"]["Enums"]["job_type"]
           updated_at: string
         }
@@ -131,10 +128,7 @@ export type Database = {
           id?: string
           input_payload?: Json
           output_url?: string | null
-          payload_snapshot?: Json
-          runpod_job_id?: string | null
           status?: Database["public"]["Enums"]["job_status"]
-          submitted_at?: string | null
           type: Database["public"]["Enums"]["job_type"]
           updated_at?: string
         }
@@ -146,10 +140,7 @@ export type Database = {
           id?: string
           input_payload?: Json
           output_url?: string | null
-          payload_snapshot?: Json
-          runpod_job_id?: string | null
           status?: Database["public"]["Enums"]["job_status"]
-          submitted_at?: string | null
           type?: Database["public"]["Enums"]["job_type"]
           updated_at?: string
         }

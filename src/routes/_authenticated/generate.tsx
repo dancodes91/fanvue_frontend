@@ -26,17 +26,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  runpodService,
-  RUNPOD_FIXED,
-  DURATION_FRAMES,
-  DURATION_OPTIONS,
-  type DurationOption,
-} from "@/services/runpodService";
+import { generationService } from "@/services/generationService";
 import { useLila } from "@/hooks/use-lila";
 import { useAuth } from "@/hooks/use-auth";
 import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/generate")({
   head: () => ({
@@ -53,7 +46,6 @@ export const Route = createFileRoute("/_authenticated/generate")({
 });
 
 type Scene = { id: string; prompt: string };
-type RefImage = { url: string; name: string; file: File };
 
 const RECOMMENDED = {
   fps: 16,
@@ -153,21 +145,17 @@ function GenerationTabs() {
 }
 
 function VideoGenerationTab() {
-  const [refImage, setRefImage] = useState<RefImage | null>(null);
-  const [duration, setDuration] = useState<DurationOption>("Long");
+  const [refImage, setRefImage] = useState<{ url: string; name: string } | null>(null);
+  const [fps, setFps] = useState(RECOMMENDED.fps);
+  const [framesPerScene, setFramesPerScene] = useState(RECOMMENDED.framesPerScene);
+  const [samplingSteps, setSamplingSteps] = useState(RECOMMENDED.samplingSteps);
   const [scenes, setScenes] = useState<Scene[]>(() => makeDefaultScenes());
   const [negative, setNegative] = useState(
     "low quality, blurry, distorted face, extra fingers, watermark, text, logo"
   );
   const [submitting, setSubmitting] = useState(false);
-  const [lastJob, setLastJob] = useState<{ jobId: string; runpodJobId: string } | null>(null);
   const { data: lila } = useLila();
   const { user } = useAuth();
-
-  // Pipeline values are fixed by the Step 11 spec.
-  const fps = RUNPOD_FIXED.fps;
-  const samplingSteps = RUNPOD_FIXED.samplingSteps;
-  const framesPerScene = DURATION_FRAMES[duration];
 
   const addScene = () =>
     setScenes((s) => [...s, { id: newId(), prompt: "" }]);
@@ -199,44 +187,37 @@ function VideoGenerationTab() {
       toast.error("You must be signed in to queue a job.");
       return;
     }
-    if (!refImage?.file) {
-      toast.error("Upload a reference image first.");
-      return;
-    }
-    if (scenes.length !== RUNPOD_FIXED.numScenes) {
-      toast.error(`This pipeline needs exactly ${RUNPOD_FIXED.numScenes} scenes (you have ${scenes.length}).`);
-      return;
-    }
-    if (scenes.some((s) => s.prompt.trim().length === 0)) {
-      toast.error("Fill in every scene prompt before generating.");
-      return;
-    }
     setSubmitting(true);
-    setLastJob(null);
     try {
-      const result = await runpodService.submitVideoJob({
-        characterId: lila?.id ?? null,
-        file: refImage.file,
-        scenes: scenes.map((s) => s.prompt),
-        negativePrompt: negative,
-        duration,
+      await generationService.enqueue({
+        type: "video",
+        character_id: lila?.id ?? null,
+        created_by: user.id,
+        status: "queued",
+        input_payload: {
+          fps,
+          framesPerScene,
+          samplingSteps,
+          numScenes: scenes.length,
+          totalFrames,
+          durationSec,
+          referenceImageName: refImage?.name ?? null,
+          scenes: scenes.map((s) => s.prompt),
+          negativePrompt: negative,
+        },
       });
-      setLastJob({ jobId: result.jobId, runpodJobId: result.runpodJobId });
-      toast.success("Job submitted to RunPod", {
-        description: `${duration} · ${scenes.length} scenes · processing`,
+      toast.success("Generation job queued", {
+        description: `${scenes.length} scenes · ${totalFrames.toLocaleString()} frames · ~${durationSec.toFixed(1)}s`,
       });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to submit job";
+      const msg = err instanceof Error ? err.message : "Failed to queue job";
       toast.error(msg);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const canGenerate =
-    !!refImage?.file &&
-    scenes.length === RUNPOD_FIXED.numScenes &&
-    scenes.every((s) => s.prompt.trim().length > 0);
+  const canGenerate = !!refImage && scenes.every((s) => s.prompt.trim().length > 0);
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -244,11 +225,12 @@ function VideoGenerationTab() {
         <ReferenceImageCard image={refImage} setImage={setRefImage} />
         <SettingsCard
           fps={fps}
-          duration={duration}
-          setDuration={setDuration}
+          setFps={setFps}
           framesPerScene={framesPerScene}
+          setFramesPerScene={setFramesPerScene}
           numScenes={scenes.length}
           samplingSteps={samplingSteps}
+          setSamplingSteps={setSamplingSteps}
         />
         <SceneBuilder
           scenes={scenes}
@@ -269,11 +251,9 @@ function VideoGenerationTab() {
           samplingSteps={samplingSteps}
           totalFrames={totalFrames}
           durationSec={durationSec}
-          duration={duration}
           canGenerate={canGenerate}
           submitting={submitting}
           onGenerate={onGenerate}
-          lastJob={lastJob}
         />
       </div>
     </div>
@@ -286,8 +266,8 @@ function ReferenceImageCard({
   image,
   setImage,
 }: {
-  image: RefImage | null;
-  setImage: (v: RefImage | null) => void;
+  image: { url: string; name: string } | null;
+  setImage: (v: { url: string; name: string } | null) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -299,7 +279,7 @@ function ReferenceImageCard({
       return;
     }
     const url = URL.createObjectURL(file);
-    setImage({ url, name: file.name, file });
+    setImage({ url, name: file.name });
   };
 
   return (
@@ -401,32 +381,59 @@ function ReferenceImageCard({
 
 /* ---------- Settings ---------- */
 
-function FixedField({ label, value }: { label: string; value: React.ReactNode }) {
+function NumberField({
+  label,
+  value,
+  onChange,
+  recommended,
+  min = 1,
+}: {
+  label: string;
+  value: number;
+  onChange: (n: number) => void;
+  recommended: number;
+  min?: number;
+}) {
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
         <Label className="text-xs font-medium text-muted-foreground">{label}</Label>
-        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">Fixed</span>
+        <button
+          type="button"
+          onClick={() => onChange(recommended)}
+          className="text-[10px] uppercase tracking-wider text-muted-foreground transition-colors hover:text-primary"
+        >
+          Rec · {recommended}
+        </button>
       </div>
-      <Input value={String(value)} readOnly className="opacity-70" />
+      <Input
+        type="number"
+        min={min}
+        value={value}
+        onChange={(e) =>
+          onChange(Math.max(min, Number(e.target.value) || min))
+        }
+      />
     </div>
   );
 }
 
 function SettingsCard({
   fps,
-  duration,
-  setDuration,
+  setFps,
   framesPerScene,
+  setFramesPerScene,
   numScenes,
   samplingSteps,
+  setSamplingSteps,
 }: {
   fps: number;
-  duration: DurationOption;
-  setDuration: (d: DurationOption) => void;
+  setFps: (n: number) => void;
   framesPerScene: number;
+  setFramesPerScene: (n: number) => void;
   numScenes: number;
   samplingSteps: number;
+  setSamplingSteps: (n: number) => void;
 }) {
   return (
     <Card>
@@ -435,7 +442,7 @@ function SettingsCard({
           <div>
             <CardTitle className="font-display text-lg">Generation Settings</CardTitle>
             <CardDescription>
-              The RunPod pipeline runs at a fixed profile. Choose a clip duration below.
+              Tune the pipeline. Recommended values are pre-filled for the RunPod default profile.
             </CardDescription>
           </div>
           <span className="rounded-full border border-border bg-card/60 px-2 py-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -443,36 +450,32 @@ function SettingsCard({
           </span>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-1.5">
-          <Label className="text-xs font-medium text-muted-foreground">Duration</Label>
-          <div className="grid grid-cols-3 gap-2">
-            {DURATION_OPTIONS.map((opt) => {
-              const active = duration === opt.value;
-              return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setDuration(opt.value)}
-                  className={cn(
-                    "rounded-lg border px-3 py-2 text-left transition-colors",
-                    active
-                      ? "border-primary bg-primary/10"
-                      : "border-border bg-card/40 hover:border-primary/40"
-                  )}
-                >
-                  <div className="text-sm font-medium">{opt.label}</div>
-                  <div className="text-[10px] text-muted-foreground">{opt.hint}</div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+      <CardContent>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <FixedField label="FPS" value={fps} />
-          <FixedField label="Frames Per Scene" value={framesPerScene} />
-          <FixedField label="Number of Scenes" value={numScenes} />
-          <FixedField label="Sampling Steps" value={samplingSteps} />
+          <NumberField label="FPS" value={fps} onChange={setFps} recommended={RECOMMENDED.fps} />
+          <NumberField
+            label="Frames Per Scene"
+            value={framesPerScene}
+            onChange={setFramesPerScene}
+            recommended={RECOMMENDED.framesPerScene}
+          />
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-medium text-muted-foreground">
+                Number of Scenes
+              </Label>
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                Auto
+              </span>
+            </div>
+            <Input type="number" value={numScenes} readOnly className="opacity-70" />
+          </div>
+          <NumberField
+            label="Sampling Steps"
+            value={samplingSteps}
+            onChange={setSamplingSteps}
+            recommended={RECOMMENDED.samplingSteps}
+          />
         </div>
       </CardContent>
     </Card>
@@ -635,24 +638,20 @@ function SummaryPanel({
   samplingSteps,
   totalFrames,
   durationSec,
-  duration,
   canGenerate,
   submitting,
   onGenerate,
-  lastJob,
 }: {
-  refImage: RefImage | null;
+  refImage: { url: string; name: string } | null;
   totalScenes: number;
   fps: number;
   framesPerScene: number;
   samplingSteps: number;
   totalFrames: number;
   durationSec: number;
-  duration: DurationOption;
   canGenerate: boolean;
   submitting: boolean;
   onGenerate: () => void;
-  lastJob: { jobId: string; runpodJobId: string } | null;
 }) {
   return (
     <Card className="sticky top-24 overflow-hidden">
@@ -687,7 +686,6 @@ function SummaryPanel({
         <Separator className="my-4" />
 
         <div className="divide-y divide-border">
-          <SummaryRow label="Duration" value={duration} />
           <SummaryRow label="Total Scenes" value={totalScenes} mono />
           <SummaryRow label="FPS" value={fps} mono />
           <SummaryRow label="Frames Per Scene" value={framesPerScene} mono />
@@ -711,29 +709,12 @@ function SummaryPanel({
           disabled={!canGenerate || submitting}
         >
           <Wand2 className="h-4 w-4" />
-          {submitting ? "Submitting to RunPod…" : "Generate Video"}
+          {submitting ? "Queueing job…" : "Generate Video"}
         </Button>
-        {!canGenerate && !submitting && (
+        {!canGenerate && (
           <p className="mt-2 text-center text-[11px] text-muted-foreground">
-            Add a reference image and fill all {RUNPOD_FIXED.numScenes} scene prompts to enable.
+            Add a reference image and fill every scene prompt to enable.
           </p>
-        )}
-        {lastJob && (
-          <div className="mt-4 rounded-lg border border-primary/30 bg-primary/5 p-3">
-            <div className="flex items-center gap-2">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-primary" />
-              <p className="text-sm font-medium">Job processing</p>
-            </div>
-            <p className="mt-1 break-all font-mono text-[11px] text-muted-foreground">
-              RunPod ID: {lastJob.runpodJobId}
-            </p>
-            <p className="break-all font-mono text-[11px] text-muted-foreground">
-              Job: {lastJob.jobId}
-            </p>
-            <p className="mt-2 text-[11px] text-muted-foreground">
-              Tracking in Supabase. Status polling arrives in Phase 2.
-            </p>
-          </div>
         )}
       </CardContent>
     </Card>

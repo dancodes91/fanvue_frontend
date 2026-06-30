@@ -17,6 +17,7 @@ import {
   Camera,
   Heart,
   Save,
+  Plus,
   Edit3,
   Trash2,
   Lock,
@@ -53,12 +54,6 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-
-import {
-  NewSceneDialog,
-  NewPromptDialog,
-  NewPresetDialog,
-} from "@/components/characters/template-dialogs";
 
 import lilaAsset from "@/assets/lila-identity.jpg.asset.json";
 
@@ -448,9 +443,9 @@ function CharactersPage() {
               <TabsTrigger value="defaults">Generation Defaults</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="scenes" className="mt-6"><SceneLibrary scenes={scenes} characterId={characterId} /></TabsContent>
-            <TabsContent value="prompts" className="mt-6"><PromptLibrary prompts={prompts} characterId={characterId} /></TabsContent>
-            <TabsContent value="presets" className="mt-6"><PresetLibrary presets={presets} characterId={characterId} /></TabsContent>
+            <TabsContent value="scenes" className="mt-6"><SceneLibrary scenes={scenes} /></TabsContent>
+            <TabsContent value="prompts" className="mt-6"><PromptLibrary prompts={prompts} /></TabsContent>
+            <TabsContent value="presets" className="mt-6"><PresetLibrary presets={presets} /></TabsContent>
             <TabsContent value="defaults" className="mt-6">
               <DefaultsPanel defaults={defaults} setDefaults={setDefaults} />
             </TabsContent>
@@ -720,7 +715,7 @@ type SceneRow = {
   intensity: string; prompt: string;
 };
 
-function SceneLibrary({ scenes, characterId }: { scenes: SceneRow[]; characterId?: string }) {
+function SceneLibrary({ scenes }: { scenes: SceneRow[] }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -728,7 +723,9 @@ function SceneLibrary({ scenes, characterId }: { scenes: SceneRow[]; characterId
           <h3 className="font-display text-lg font-semibold">Scene Template Library</h3>
           <p className="text-sm text-muted-foreground">Reusable environments for every drop and PPV cycle.</p>
         </div>
-        <NewSceneDialog characterId={characterId} />
+        <Button size="sm" disabled>
+          <Plus className="mr-2 h-4 w-4" /> New scene
+        </Button>
       </div>
 
       <div>
@@ -789,7 +786,7 @@ type PromptRow = {
   id: string; name: string; prompt: string; caption_direction: string | null; intensity: string | null;
 };
 
-function PromptLibrary({ prompts, characterId }: { prompts: PromptRow[]; characterId?: string }) {
+function PromptLibrary({ prompts }: { prompts: PromptRow[] }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -797,7 +794,9 @@ function PromptLibrary({ prompts, characterId }: { prompts: PromptRow[]; charact
           <h3 className="font-display text-lg font-semibold">Prompt Template Library</h3>
           <p className="text-sm text-muted-foreground">Ready-to-fire scaffolds for recurring drops.</p>
         </div>
-        <NewPromptDialog characterId={characterId} />
+        <Button size="sm" disabled>
+          <Plus className="mr-2 h-4 w-4" /> New template
+        </Button>
       </div>
 
       {prompts.length === 0 ? (
@@ -844,7 +843,7 @@ type PresetRow = {
   prompt_style: string | null; caption_style: string | null; negative_prompt: string | null;
 };
 
-function PresetLibrary({ presets, characterId }: { presets: PresetRow[]; characterId?: string }) {
+function PresetLibrary({ presets }: { presets: PresetRow[] }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -852,7 +851,9 @@ function PresetLibrary({ presets, characterId }: { presets: PresetRow[]; charact
           <h3 className="font-display text-lg font-semibold">Content Intensity Presets</h3>
           <p className="text-sm text-muted-foreground">One-tap tone, prompt and negative-prompt bundles.</p>
         </div>
-        <NewPresetDialog characterId={characterId} />
+        <Button size="sm" variant="outline" disabled>
+          <Plus className="mr-2 h-4 w-4" /> New preset
+        </Button>
       </div>
       {presets.length === 0 ? (
         <p className="rounded-lg border border-dashed border-border/60 bg-muted/20 p-8 text-center text-sm text-muted-foreground">
